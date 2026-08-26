@@ -98,8 +98,9 @@ def save_lead(data: dict):
 def get_leads():
     try:
         db = SessionLocal()
-        leads = db.query(LeadRecord).all()
-        scans = db.query(ScanRecord).all()
+        # Latest data ko sab se upar lane ke liye order_by add kiya gaya hai
+        leads = db.query(LeadRecord).order_by(LeadRecord.created_at.desc()).all()
+        scans = db.query(ScanRecord).order_by(ScanRecord.created_at.desc()).all()
         db.close()
         
         return {

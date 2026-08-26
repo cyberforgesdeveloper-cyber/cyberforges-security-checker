@@ -4,8 +4,9 @@ services:
     env: python
     region: frankfurt
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r Backend/requirements.txt
-    startCommand: cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r Backend/requirements.txt
+    startCommand: cd Backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: 10000
+        sync: false

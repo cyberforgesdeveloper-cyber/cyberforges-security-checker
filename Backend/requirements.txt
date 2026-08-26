@@ -3,4 +3,4 @@ uvicorn
 reportlab
 sqlalchemy
 requests
-dnspython
+dnspython>=2.6.0

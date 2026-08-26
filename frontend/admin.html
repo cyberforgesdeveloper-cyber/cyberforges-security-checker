@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberForges - Admin Login & Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        h1, h2 { color: #38bdf8; text-align: center; }
+        .card { background: #1e293b; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #334155; color: #38bdf8; }
+        tr:hover { background: #273548; }
+        .loading { text-align: center; padding: 20px; color: #94a3b8; }
+        
+        /* Login Box Styling */
+        #login-screen {
+            max-width: 400px;
+            margin: 100px auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background: #0ea5e9; }
+        .error { color: #f87171; font-size: 14px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <h2>Admin Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()">Login</button>
+        <div id="error-msg" class="error"></div>
+    </div>
+
+    <!-- Main Dashboard (Initially Hidden) -->
+    <div id="dashboard" class="container" style="display: none;">
+        <h1>CyberForges Admin Dashboard</h1>
+        
+        <div style="text-align: right; margin-bottom: 10px;">
+            <button onclick="handleLogout()" style="width: auto; padding: 8px 15px; background: #f87171; color: #fff;">Logout</button>
+        </div>
+
+        <!-- Leads Table -->
+        <div class="card">
+            <h2>Customer Leads (Forms Filled)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Company</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Domain</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-table">
+                    <tr><td colspan="7" class="loading">Loading leads...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Scans Table -->
+        <div class="card" style="margin-top: 40px;">
+            <h2>Website Scans History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Domain</th>
+                        <th>Security Score</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="scans-table">
+                    <tr><td colspan="4" class="loading">Loading scans...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    const backendUrl = "https://cyberforges-backend.onrender.com";
+
+    // Yahan aap apna pasandeeda username aur password set kar sakte hain:
+    const ADMIN_USER = "admin";
+    const ADMIN_PASS = "cyberforges123";
+
+    // Check if already logged in during this session
+    if (sessionStorage.getItem("isLoggedIn") === "true") {
+        showDashboard();
+    }
+
+    function handleLogin() {
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+        const errorMsg = document.getElementById("error-msg");
+
+        if (user === ADMIN_USER && pass === ADMIN_PASS) {
+            sessionStorage.setItem("isLoggedIn", "true");
+            showDashboard();
+        } else {
+            errorMsg.innerText = "Invalid Username or Password!";
+        }
+    }
+
+    function handleLogout() {
+        sessionStorage.removeItem("isLoggedIn");
+        location.reload();
+    }
+
+    function showDashboard() {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        fetchAdminData();
+    }
+
+    async function fetchAdminData() {
+        try {
+            const response = await fetch(`${backendUrl}/api/admin/leads`);
+            const data = await response.json();
+
+            if (data.status === "success") {
+                // Populate Leads
+                const leadsTable = document.getElementById("leads-table");
+                if (data.leads.length > 0) {
+                    leadsTable.innerHTML = data.leads.map(l => `
+                        <tr>
+                            <td>${l.id}</td>
+                            <td>${l.name || '-'}</td>
+                            <td>${l.company || '-'}</td>
+                            <td>${l.email}</td>
+                            <td>${l.phone || '-'}</td>
+                            <td>${l.domain}</td>
+                            <td>${new Date(l.created_at).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    leadsTable.innerHTML = `<tr><td colspan="7" class="loading">No leads found yet.</td></tr>`;
+                }
+
+                // Populate Scans
+                const scansTable = document.getElementById("scans-table");
+                if (data.scans.length > 0) {
+                    scansTable.innerHTML = data.scans.map(s => `
+                        <tr>
+                            <td>${s.id}</td>
+                            <td>${s.domain}</td>
+                            <td><strong style="color: ${s.total_score > 70 ? '#4ade80' : '#f87171'}">${s.score || s.total_score} / 100</strong></td>
+                            <td>${new Date(s.created_at).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    scansTable.innerHTML = `<tr><td colspan="4" class="loading">No scans found yet.</td></tr>`;
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching admin data:", error);
+        }
+    }
+</script>
+
+</body>
+</html>
